@@ -2,7 +2,7 @@ import glob
 import dask
 import pandas as pd
 
-col_widths = [3, 4, 12, 4, 6, 6, 5, 7, 6, 5]
+col_widths = [3, 4, 12, 4, 6, 6, 5, 7, 6, 6, 4]
 cols = [
     "basin",
     "number",
@@ -14,8 +14,8 @@ cols = [
     "lon",
     "vmax",
     "mslp",
+    "cat"
 ]
-index = ["basin", "number", "tau", "tech"]
 
 
 def lat_lon_to_num(string):
@@ -39,14 +39,14 @@ def process_df(file):
     return df
 
 
-for prefix in ["b", "a"]:
-    df_list = dask.compute(
-        [process_df(file) for file in sorted(glob.glob(f"{prefix}*.dat"))],
-        scheduler="processes", num_workers=4
-    )[0]
-    df = pd.concat(df_list)
-    label = "fcst" if prefix == "a" else "best"
-    for year in df["init"].dt.year.unique():
-        df.loc[df["init"].dt.year == year].set_index(index).to_parquet(
-            f"{year:.0f}_{label}_track.parquet.gzip", compression="gzip")
-
+if __name__ == "__main__":
+    for prefix in ["b", "a"]:
+        df_list = dask.compute(
+            [process_df(file) for file in sorted(glob.glob(f"{prefix}*.dat"))],
+            scheduler="processes", num_workers=4
+        )[0]
+        df = pd.concat(df_list)
+        label = "fcst" if prefix == "a" else "best"
+        for year in df["init"].dt.year.unique():
+            df.loc[df["init"].dt.year == year].to_parquet(
+                f"{year:.0f}_{label}_track.parquet.gzip", compression="gzip")
